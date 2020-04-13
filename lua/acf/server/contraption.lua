@@ -172,6 +172,12 @@ function ACF_CalcMassRatio(Ent, Tally)
 	end
 end
 
+hook.Add("OnSetMass", "ACF", function(Ent, _, NewMass)
+	if Ent.ACF and Ent.ACF.LegalMass and NewMass ~= Ent.ACF.LegalMass then
+		return false
+	end
+end)
+
 do -- ACF Parent Detouring ----------------------
 	local Detours = {}
 	function ACF.AddParentDetour(Class, Variable)

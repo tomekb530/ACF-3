@@ -44,7 +44,6 @@ local function IsLegal(Entity)
 	end
 	if Entity:GetModel() ~= Entity.ACF.Model then return false, "Incorrect model" end
 	if Entity:GetNoDraw() then return false, "Not drawn" end
-	if Phys:GetMass() < Entity.ACF.LegalMass then return false, "Underweight" end -- You can make it heavier than the legal mass if you want
 	if Entity:GetSolid() ~= SOLID_VPHYSICS then return false, "Not solid" end -- Entities must always be solid
 	if Entity.ClipData and next(Entity.ClipData) then return false, "Visual Clip" end -- No visclip
 

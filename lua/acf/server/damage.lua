@@ -63,15 +63,17 @@ end
 local function Shove(Target, Pos, Vec, KE )
 	if HookRun("ACF_KEShove", Target, Pos, Vec, KE) == false then return end
 
-	local Phys = ACF_GetAncestor(Target):GetPhysicsObject()
+	local Phys = Target:GetAncestor():GetPhysicsObject()
 
 	if IsValid(Phys) then
-		if not Target.acflastupdatemass or Target.acflastupdatemass + 10 < CurTime() then
-			ACF_CalcMassRatio(Target)
-		end
+		if Target.CFW then -- If target has connected entities
+			local MassData = Target.CFW.Contraption.Mass
+			local Ratio    = MassData.Physical / MassData.Parented
 
-		local physratio = Target.acfphystotal / Target.acftotal
-		Phys:ApplyForceOffset( Vec:GetNormalized() * KE * physratio, Pos )
+			Phys:ApplyForceOffset( Vec:GetNormalized() * KE * Ratio, Pos )
+		else -- Entity has nothing connected to it
+			Phys:ApplyForceOffset( Vec:GetNormalized() * KE, Pos )
+		end
 	end
 end
 

@@ -239,7 +239,7 @@ local function SetActive(Entity, Value)
 		if ShouldActivate then
 			Entity.Active = true
 
-			Entity:CalcMassRatio()
+			Entity:MassUpdate()
 
 			Entity.LastThink = CurTime()
 			Entity.Torque = Entity.PeakTorque
@@ -265,8 +265,6 @@ local function SetActive(Entity, Value)
 				if IsValid(Entity) then
 					CheckGearboxes(Entity)
 					CheckDistantFuelTanks(Entity)
-
-					Entity:CalcMassRatio()
 				else
 					TimerRemove("ACF Engine Clock " .. Entity:EntIndex())
 				end
@@ -529,39 +527,6 @@ function ENT:ACF_OnDamage(Entity, Energy, FrArea, Angle, Inflictor, _, Type)
 	return Res
 end
 
--- specialized calcmassratio for engines
-function ENT:CalcMassRatio()
-	local PhysMass 	= 0
-	local TotalMass = 0
-	local Physical, Parented = ACF_GetEnts(self)
-
-	for K in pairs(Physical) do
-		local Phys = K:GetPhysicsObject() -- Should always exist, but just in case
-
-		if IsValid(Phys) then
-			local Mass = Phys:GetMass()
-
-			TotalMass = TotalMass + Mass
-			PhysMass  = PhysMass + Mass
-		end
-	end
-
-	for K in pairs(Parented) do
-		if not Physical[K] then
-			local Phys = K:GetPhysicsObject()
-
-			if IsValid(Phys) then
-				TotalMass = TotalMass + Phys:GetMass()
-			end
-		end
-	end
-
-	self.MassRatio = PhysMass / TotalMass
-
-	WireLib.TriggerOutput(self, "Mass", Round(TotalMass, 2))
-	WireLib.TriggerOutput(self, "Physical Mass", Round(PhysMass, 2))
-end
-
 function ENT:GetConsumption(Throttle, RPM)
 	if not IsValid(self.FuelTank) then return 0 end
 
@@ -766,3 +731,83 @@ function ENT:OnRemove()
 
 	WireLib.Remove(self)
 end
+
+function ENT:MassUpdate()
+	local TotalMass = Contraption.GetMass(self)
+	local PhysMass  = Contraption.GetPhysicalMass(self)
+
+	self.MassRatio = PhysMass / TotalMass
+
+	WireLib.TriggerOutput(self, "Mass", Round(TotalMass, 2))
+	WireLib.TriggerOutput(self, "Physical Mass", Round(PhysMass, 2))
+end
+
+function ENT:OnContraptionAppend(C) -- Engine was connected to a contraption
+	if not C.ACF then C.ACF = {} end
+	if not C.ACF.Engines then C.ACF.Engines = {} end
+
+	C.ACF.Engines[self] = true
+end
+
+function ENT:OnContraptionPop(C) -- Engine was removed from a contraption
+	C.ACF.Engines[self] = nil
+
+	if not next(C.ACF.Engines) then
+		C.ACF.Engines = nil
+
+		if not next(C.ACF) then
+			C.ACF = nil
+		end
+	end
+end
+
+hook.Add("OnContraptionSplit", "ACF Engines", function(Old, New)
+	if Old.ACF and Old.ACF.Engines then -- Original contraption had engines... Check if any split to the new contraption
+		local NewEnts  = New.Ents
+		local Transfer = {}
+
+		for Engine in pairs(Old.ACF.Engines) do
+			if NewEnts[Engine] then -- Engine has been moved to a new contraption
+				Transfer[Engine] = true -- Mark it to be transferred
+			end
+		end
+
+		if next(Transfer) then
+			if not New.ACF then New.ACF = {} end
+			if not New.ACF.Engines then New.ACF.Engines = {} end
+
+			local Engines = New.ACF.Engines
+
+			for Engine in pairs(Transfer) do
+				Engines[Engine] = true -- Attach to new contraption
+				Engine:MassUpdate() -- Have it update mass info
+			end
+		end
+	end
+end)
+
+hook.Add("OnContraptionMerge", "ACF Engines", function(Kept, Removed)
+	if Removed.ACF and Removed.ACF.Engines then -- Removed contraption had engines on it
+		if not Kept.ACF then Kept.ACF = {} end
+		if not Kept.ACF.Engines then Kept.ACF.Engines = {} end
+
+		local Engines = Kept.ACF.Engines
+
+		for Engine in pairs(Removed.ACF.Engines) do
+			Engines[Engine] = true -- Attach to new contraption
+			Engine:MassUpdate() -- Have it update mass info
+		end
+	end
+end)
+
+hook.Add("OnSetMass", "ACF Engines", function(Entity)
+	if Entity.CFW then
+		local C = Entity.CFW.Contraption
+
+		if C.ACF and C.ACF.Engines then -- There are engines on the contraption
+			for Engine in pairs(C.ACF.Engines) do -- Let each engine on the contraption know the mass updated
+				Engine:MassUpdate()
+			end
+		end
+	end
+end)

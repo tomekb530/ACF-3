@@ -512,7 +512,7 @@ do
 		local function KillChildProps( Entity, BlastPos, Energy )
 
 			local Explosives = {}
-			local Children 	 = ACF_GetAllChildren(Entity)
+			local Children 	 = Entity:GetAllChildren()
 			local Count		 = 0
 
 			-- do an initial processing pass on children, separating out explodey things to handle last

@@ -1,22 +1,3 @@
--- Contraption-aware functionality
-
--- Local Funcs ----------------------------------
--- These functions are used within this file and made global at the end
-
-local ColGroupFilter = {COLLISION_GROUP_DEBRIS = true, COLLISION_GROUP_DEBRIS_TRIGGER = true}
-
-local function GetAncestor(Ent)
-	if not IsValid(Ent) then return nil end
-
-	local Parent = Ent
-
-	while IsValid(Parent:GetParent()) do
-		Parent = Parent:GetParent()
-	end
-
-	return Parent
-end
-
 local function GetAllPhysicalEntities(Ent, Tab)
 	local Res = Tab or {}
 
@@ -54,129 +35,21 @@ local function GetAllChildren(Ent, Tab)
 	return Res
 end
 
-local function GetEnts(Ent)
-	local Ancestor 	= GetAncestor(Ent)
-	local Phys 		= GetAllPhysicalEntities(Ancestor)
-	local Pare 		= {}
+do -- Contraption awareness/CFW -----------------
+	hook.Add("OnSetMass", "ACF", function(Ent, _, NewMass)
+		if Ent.ACF and Ent.ACF.LegalMass and NewMass ~= Ent.ACF.LegalMass then
+			return false
+		end
+	end)
 
-	for K in pairs(Phys) do
-		GetAllChildren(K, Pare)
-	end
+	local ColGroupFilter = {COLLISION_GROUP_DEBRIS = true, COLLISION_GROUP_DEBRIS_TRIGGER = true}
+	hook.Add("OnContraptionAppend", "ACF ColGroups", function(_, Ent)
+		if ColGroupFilter[Ent:GetCollisionGroup()] then -- If the collision group is set to something we dont like
+			Ent:SetCollisionGroup(COLLISION_GROUP_NONE) -- Reset it
 
-	return Phys, Pare
+		end
+	end)
 end
--------------------------------------------------
-function ACF_HasConstraint(Ent)
-	if Ent.Constraints then
-		for _, V in pairs(Ent.Constraints) do
-			if V.Type ~= "NoCollide" then
-				return true
-			end
-		end
-	end
-
-	return false
-end
-
-function ACF_CalcMassRatio(Ent, Tally)
-	local TotMass  = 0
-	local PhysMass = 0
-	local Time     = CurTime()
-
-	-- Tally Vars
-	local Power    = 0
-	local Fuel     = 0
-	local PhysN    = 0
-	local ParN 	   = 0
-	local ConN	   = 0
-
-	local Physical, Parented = GetEnts(Ent)
-
-	for K in pairs(Physical) do
-		if Tally then
-			local Class = K:GetClass()
-
-			if Class == "acf_engine" then
-				Power = ( Power + (K.peakkw * 1.34) ) * (next(K.FuelTanks) and 1.25 or 1)
-			elseif Class == "acf_fueltank" then
-				Fuel = Fuel + K.Capacity
-			end
-
-			if K.Constraints then
-				for _, Con in pairs(K.Constraints) do
-					if IsValid(Con) and Con.Type ~= "NoCollide" then -- NoCollides aren't a real constraint
-						ConN = ConN + 1
-					end
-				end
-			end
-
-			PhysN = PhysN + 1
-		end
-
-		local Phys = K:GetPhysicsObject() -- This should always exist, but just in case
-
-		if IsValid(Phys) then
-			local Mass = Phys:GetMass()
-
-			TotMass  = TotMass + Mass
-			PhysMass = PhysMass + Mass
-
-			if ColGroupFilter[K:GetCollisionGroup()] then
-				K:SetCollisionGroup(COLLISION_GROUP_NONE)
-			end
-		end
-	end
-
-	for K in pairs(Parented) do
-		if Physical[K] then continue end -- Skip overlaps
-
-		if Tally then
-			local Class = K:GetClass()
-
-			if Class == "acf_engine" then
-				Power = ( Power + (K.peakkw * 1.34) ) * (next(K.FuelTanks) and 1.25 or 1)
-			elseif Class == "acf_fueltank" then
-				Fuel = Fuel + K.Capacity
-			end
-
-			ParN = ParN + 1
-		end
-
-		local Phys = K:GetPhysicsObject()
-
-		if IsValid(Phys) then
-			TotMass = TotMass + Phys:GetMass()
-
-			if ColGroupFilter[K:GetCollisionGroup()] then
-				K:SetCollisionGroup(COLLISION_GROUP_NONE)
-			end
-		end
-	end
-
-	for K in pairs(Physical) do
-		K.acfphystotal      = PhysMass
-		K.acftotal          = TotMass
-		K.acflastupdatemass = Time
-	end
-
-	for K in pairs(Parented) do
-		if Physical[K] then continue end -- Skip overlaps
-
-		K.acfphystotal      = PhysMass
-		K.acftotal          = TotMass
-		K.acflastupdatemass = Time
-	end
-
-	if Tally then
-		return Power, Fuel, PhysN, ParN, ConN, Ent:CPPIGetOwner():Nick()
-	end
-end
-
-hook.Add("OnSetMass", "ACF", function(Ent, _, NewMass)
-	if Ent.ACF and Ent.ACF.LegalMass and NewMass ~= Ent.ACF.LegalMass then
-		return false
-	end
-end)
 
 do -- ACF Parent Detouring ----------------------
 	local Detours = {}
@@ -210,7 +83,4 @@ do -- ACF Parent Detouring ----------------------
 end ---------------------------------------------
 
 -- Globalize ------------------------------------
-ACF_GetAllPhysicalEntities 	= GetAllPhysicalEntities
-ACF_GetAllChildren 			= GetAllChildren
-ACF_GetEnts 				= GetEnts
-ACF_GetAncestor 			= GetAncestor
+ACF.GetAllChildren 			= GetAllChildren

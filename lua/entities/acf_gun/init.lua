@@ -335,7 +335,7 @@ do -- Metamethods --------------------------------
 			self.BulletData.Owner  = self.User -- Must be updated on every shot
 			self.BulletData.Gun	   = self      -- because other guns share this table
 			self.BulletData.Pos    = self:BarrelCheck()
-			self.BulletData.Flight = Dir * self.BulletData.MuzzleVel * 39.37 + ACF_GetAncestor(self):GetVelocity()
+			self.BulletData.Flight = Dir * self.BulletData.MuzzleVel * 39.37 + self:GetAncestor():GetVelocity()
 			self.BulletData.Fuze   = self.Fuze -- Must be set when firing as the table is shared
 
 			ACF.RoundTypes[self.BulletData.Type].create(self, self.BulletData) -- Spawn projectile

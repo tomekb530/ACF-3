@@ -65,7 +65,7 @@ function ACF_CreateBullet(BulletData)
 	local Bullet = table.Copy(BulletData)
 
 	if IsValid(Bullet.Gun) then
-		Bullet.TraceBackComp = math.max(ACF_GetAncestor(BulletData.Gun):GetPhysicsObject():GetVelocity():Dot(BulletData.Flight:GetNormalized()), 0)
+		Bullet.TraceBackComp = math.max(BulletData.Gun:GetAncestor():GetPhysicsObject():GetVelocity():Dot(BulletData.Flight:GetNormalized()), 0)
 		Bullet.Filter 		 = {BulletData.Gun}
 	else
 		Bullet.Filter = {}

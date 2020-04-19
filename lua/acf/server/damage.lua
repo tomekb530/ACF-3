@@ -690,7 +690,7 @@ do
 				Bullet.Pos = HitPos + HitNormal * 0.75
 				Bullet.FlightTime = 0
 				Bullet.Flight = (RicochetVector(Bullet.Flight, HitNormal) + VectorRand() * 0.025):GetNormalized() * Speed * Ricochet
-				Bullet.TraceBackComp = math.max(ACF_GetAncestor(Target):GetPhysicsObject():GetVelocity():Dot(Bullet.Flight:GetNormalized()),0)
+				Bullet.TraceBackComp = math.max(Target:GetAncestor():GetPhysicsObject():GetVelocity():Dot(Bullet.Flight:GetNormalized()),0)
 				HitRes.Ricochet = true
 			end
 

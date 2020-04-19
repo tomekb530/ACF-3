@@ -716,7 +716,7 @@ function ENT:Act(Torque, DeltaTime, MassRatio)
 	end
 
 	if ReactTq ~= 0 then
-		local BoxPhys = ACF_GetAncestor(self):GetPhysicsObject()
+		local BoxPhys = self:GetAncestor():GetPhysicsObject()
 
 		if IsValid(BoxPhys) then
 			BoxPhys:ApplyTorqueCenter(self:GetRight() * Clamp(2 * math.deg(ReactTq * MassRatio) * DeltaTime, -500000, 500000))

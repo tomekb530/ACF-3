@@ -104,17 +104,30 @@ elseif SERVER then
 
 		if not IsValid(Ent) then return end
 
-		local Power, Fuel, PhysNum, ParNum, ConNum, Name = ACF_CalcMassRatio(Ent, true)
+		local C = Ent.CFW and Ent.CFW.Contraption or nil
+		local Power, Fuel, ConNum, TotNum, ParNum, PhysNum, MassRatio = 0, 0, 0, 1, 0, 1, 100
+		local MassTotal, ParMass, PhyMass = 0, 0, Ent:GetPhysicsObject():GetMass()
 
-		local Total 		= Ent.acftotal
-		local phystotal 	= Ent.acfphystotal
-		local parenttotal 	= Total - Ent.acfphystotal
-		local physratio 	= 100 * Ent.acfphystotal / Total, 1
+		if C then
+			MassTotal = Contraption.GetMass(C)
+			ParMass   = Contraption.GetParentedMass(C) -- Cheaper than getting physical mass
+			PhyMass   = MassTotal - ParMass
 
-		Ply:ChatPrint("--- ACF Contraption Readout (Owner: " .. Name .. ") ---")
-		Ply:ChatPrint("Mass: " .. math.Round(Total, 1) .. " kg total | " ..  math.Round(phystotal, 1) .. " kg physical (" .. math.Round(physratio) .. "%) | " .. math.Round(parenttotal, 1) .. " kg parented")
-		Ply:ChatPrint("Mobility: " .. math.Round(Power / (Total / 1000), 1) .. " hp/ton @ " .. math.Round(Power) .. " hp | " .. math.Round(Fuel) .. " liters of fuel")
-		Ply:ChatPrint("Entities: " .. PhysNum + ParNum .. " (" .. PhysNum .. " physical, " .. ParNum .. " parented) | " .. ConNum .. " constraints")
+			local Mobility = C.ACF and C.ACF.Mobility
+
+			Power     = Mobility and Mobility.Power or 0
+			Fuel	  = Mobility and Mobility.Fuel or 0
+			ConNum    = C.Constraints
+			TotNum    = C.Count
+			ParNum    = table.Count(Contraption.GetParentedEnts(C)) or 0
+			PhysNum   = TotNum - ParNum
+			MassRatio = 100 * PhyMass / MassTotal
+		end
+
+		Ply:ChatPrint("--- ACF Contraption Readout (Owner: " .. Ent:CPPIGetOwner():Nick() .. ") ---")
+		Ply:ChatPrint("Mass: " .. math.Round(MassTotal, 1) .. " kg total | " ..  math.Round(PhyMass, 1) .. " kg physical (" .. math.Round(MassRatio) .. "%) | " .. math.Round(ParMass, 1) .. " kg parented")
+		Ply:ChatPrint("Mobility: " .. math.Round(Power / (MassTotal / 1000), 1) .. " hp/ton @ " .. math.Round(Power) .. " hp | " .. math.Round(Fuel) .. " liters of fuel")
+		Ply:ChatPrint("Entities: " .. TotNum .. " (" .. PhysNum .. " physical, " .. ParNum .. " parented) | " .. ConNum .. " constraints")
 	end)
 end
 

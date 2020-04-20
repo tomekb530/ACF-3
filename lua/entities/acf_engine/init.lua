@@ -710,8 +710,16 @@ end
 
 do -- Misc --------------------------------------
 	function ENT:MassUpdate()
-		local TotalMass = Contraption.GetMass(self)
-		local PhysMass  = Contraption.GetPhysicalMass(self)
+		local C = self:GetContraption()
+		local TotalMass, PhysMass
+
+		if C then
+			TotalMass = Contraption.GetMass(C)
+			PhysMass  = Contraption.GetPhysicalMass(C)
+		else
+			TotalMass = self:GetPhysicsObject():GetMass()
+			PhysMass  = TotalMass
+		end
 
 		self.MassRatio = PhysMass / TotalMass
 

@@ -303,10 +303,12 @@ do -- Contraption awareness ---------------------
 		if not C.ACF.Engines then C.ACF.Engines = {} end
 
 		C.ACF.Engines[self] = true
+		self:MassUpdate() -- Update mass info
 	end
 
 	function ENT:OnContraptionPop(C) -- Engine was removed from a contraption
 		C.ACF.Engines[self] = nil
+		self:MassUpdate()
 
 		if not next(C.ACF.Engines) then
 			C.ACF.Engines = nil
@@ -317,44 +319,10 @@ do -- Contraption awareness ---------------------
 		end
 	end
 
-	hook.Add("OnContraptionSplit", "ACF Engines", function(Old, New)
-		if Old.ACF and Old.ACF.Engines then -- Original contraption had engines... Check if any split to the new contraption
-			local NewEnts  = New.Ents
-			local Transfer = {}
-
-			for Engine in pairs(Old.ACF.Engines) do
-				if NewEnts[Engine] then -- Engine has been moved to a new contraption
-					Transfer[Engine] = true -- Mark it to be transferred
-				end
-			end
-
-			if next(Transfer) then
-				if not New.ACF then New.ACF = {} end
-				if not New.ACF.Engines then New.ACF.Engines = {} end
-
-				local Engines = New.ACF.Engines
-
-				for Engine in pairs(Transfer) do
-					Engines[Engine] = true -- Attach to new contraption
-					Engine:MassUpdate() -- Have it update mass info
-				end
-			end
-		end
-	end)
-
-	hook.Add("OnContraptionMerge", "ACF Engines", function(Kept, Removed)
-		if Removed.ACF and Removed.ACF.Engines then -- Removed contraption had engines on it
-			if not Kept.ACF then Kept.ACF = {} end
-			if not Kept.ACF.Engines then Kept.ACF.Engines = {} end
-
-			local Engines = Kept.ACF.Engines
-
-			for Engine in pairs(Removed.ACF.Engines) do
-				Engines[Engine] = true -- Attach to new contraption
-				Engine:MassUpdate() -- Have it update mass info
-			end
-		end
-	end)
+	function ENT:OnContraptionTransfer(From, To)
+		self:OnContraptionPop(From)
+		self:OnContraptionAppend(To)
+	end
 
 	hook.Add("OnSetMass", "ACF Engines", function(Entity)
 		if Entity.CFW then

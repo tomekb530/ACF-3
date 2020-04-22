@@ -9,6 +9,32 @@ local ClassUnlink = ACF.GetClassUnlink
 local TimerCreate = timer.Create
 local TimerExists = timer.Exists
 
+do -- Contraption awareness / CFW ---------------
+	function ENT:OnContraptionAppend(C) -- Tank was connected to a contraption
+		if not C.ACF then C.ACF = {} end
+		if not C.ACF.FuelTanks then C.ACF.FuelTanks = {} end
+
+		C.ACF.FuelTanks[self] = true
+	end
+
+	function ENT:OnContraptionPop(C) -- Tank was removed from a contraption
+		C.ACF.FuelTanks[self] = nil
+
+		if not next(C.ACF.FuelTanks) then
+			C.ACF.FuelTanks = nil
+
+			if not next(C.ACF) then
+				C.ACF = nil
+			end
+		end
+	end
+
+	function ENT:OnContraptionTransfer(From, To)
+		self:OnContraptionPop(From)
+		self:OnContraptionAppend(To)
+	end
+end
+
 do -- Spawning/Removal --------------------------
 	local function UpdateFuelData(Entity, Id, Data1, Data2, FuelData)
 		local Percentage = 1 --how full is the tank?

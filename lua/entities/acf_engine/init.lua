@@ -307,6 +307,8 @@ do -- Contraption awareness ---------------------
 	end
 
 	function ENT:OnContraptionPop(C) -- Engine was removed from a contraption
+		if not C.ACF then return end -- This is necessary for some reason
+
 		C.ACF.Engines[self] = nil
 		self:MassUpdate()
 

@@ -18,6 +18,8 @@ do -- Contraption awareness / CFW ---------------
 	end
 
 	function ENT:OnContraptionPop(C) -- Tank was removed from a contraption
+		if not C.ACF then return end -- This is necessary for some reason
+
 		C.ACF.FuelTanks[self] = nil
 
 		if not next(C.ACF.FuelTanks) then
